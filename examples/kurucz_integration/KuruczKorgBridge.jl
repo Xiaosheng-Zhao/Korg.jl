@@ -295,8 +295,9 @@ Synthesize stellar spectrum using Korg.
 
 # Example
 ```julia
-A_X = Korg.format_A_X(0.0, alpha_H=0.0)  # Solar composition
-wavelengths = [(15000, 28000, 0.1)]  # JWST NIRSpec range in Å
+#A_X = Korg.format_A_X(0.0, alpha_elements=0.0)  # Solar composition
+A_X = Korg.format_A_X(0.0, alpha_elements=0.0)
+wavelengths = [(9000, 18000, 0.1)]  # JWST NIRSpec range in Å
 result = synthesize_spectrum(korg_atm, A_X, wavelengths; vmic=1.2)
 ```
 """
@@ -305,8 +306,13 @@ function synthesize_spectrum(korg_atm::Korg.PlanarAtmosphere, A_X, wavelengths;
                             save_continuum::Bool=true)
     # Load default linelist if not provided
     if linelist === nothing
-        @info "Loading VALD solar linelist..."
-        linelist = Korg.get_VALD_solar_linelist()
+        #@info "Loading VALD solar linelist..."
+        #linelist = Korg.get_VALD_solar_linelist()
+	@info "Loading NIR linelist for JWST wavelength range..."
+    	linelist = Korg.read_linelist(
+        	get(ENV, "KORG_NIR_LINELIST", "/scratch/zxs/scripts/Korg.jl/examples/kurucz_integration/jwst_nir_linelist_900_1800.dat"),
+        	format="kurucz"
+    	)
     end
 
     # Perform synthesis
@@ -345,7 +351,7 @@ End-to-end function: Kurucz atmosphere generation → Korg synthesis.
 # Example
 ```julia
 emulator = load_kurucz_emulator("model.pt")
-result = kurucz_synthesize(emulator, 5777, 4.44, 0.0, 0.0, [(15000, 28000, 0.1)])
+result = kurucz_synthesize(emulator, 5777, 4.44, 0.0, 0.0, [(9000, 18000, 0.1)])
 ```
 """
 function kurucz_synthesize(emulator, Teff::Real, logg::Real, Fe_H::Real, alpha_Fe::Real,
@@ -357,7 +363,7 @@ function kurucz_synthesize(emulator, Teff::Real, logg::Real, Fe_H::Real, alpha_F
     korg_atm = kurucz_to_korg(kurucz_atm)
 
     # Step 3: Prepare abundances
-    A_X = Korg.format_A_X(Fe_H, alpha_H=alpha_Fe)
+    A_X = Korg.format_A_X(Fe_H, alpha_elements=alpha_Fe)
 
     # Step 4: Synthesize spectrum
     result = synthesize_spectrum(korg_atm, A_X, wavelengths; vmic=vmic, linelist=linelist)

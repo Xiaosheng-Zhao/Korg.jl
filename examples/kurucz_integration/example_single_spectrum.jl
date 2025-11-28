@@ -34,7 +34,7 @@ alpha_Fe = 0.0     # Alpha enhancement [α/Fe] - Solar value
 
 # Wavelength range (Angstroms)
 # Example: JWST NIRSpec range suitable for M31 stellar spectroscopy
-wavelengths = [(15000.0, 28000.0, 0.5)]  # 1.5-2.8 μm with 0.5 Å spacing
+wavelengths = [(9000.0, 18000.0, 0.5)]  # 0.9-1.8 μm with 0.5 Å spacing
 
 # Microturbulence velocity (km/s)
 vmic = 1.0
