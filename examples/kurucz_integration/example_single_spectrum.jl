@@ -103,21 +103,63 @@ open(output_file, "w") do io
 end
 println("Spectrum saved to: $output_file")
 
-# Optional: Quick plot
+# Optional: Quick plots
 try
     using Plots
-    plt = plot(result.wavelengths, result.flux,
-               xlabel="Wavelength (Å)",
-               ylabel="Flux",
-               title="Synthetic Spectrum: Teff=$Teff K, [Fe/H]=$Fe_H",
-               label="Spectrum",
-               linewidth=1)
-    plot!(plt, result.wavelengths, result.continuum,
-          label="Continuum", linewidth=2, linestyle=:dash)
-    savefig(plt, "spectrum_plot.png")
-    println("Plot saved to: spectrum_plot.png")
-catch
+
+    # Plot 1: Continuum-normalized spectrum (full range)
+    normalized = result.flux ./ result.continuum
+    plt1 = plot(result.wavelengths, normalized,
+                xlabel="Wavelength (Å)",
+                ylabel="Normalized Flux",
+                title="Continuum-Normalized Spectrum: Teff=$Teff K, [Fe/H]=$Fe_H",
+                label="Normalized Spectrum",
+                linewidth=0.8,
+                size=(1200, 600),
+                margin=5Plots.mm)
+    hline!(plt1, [1.0], color=:black, linestyle=:dash,
+           label="Continuum", linewidth=1.5, alpha=0.5)
+    savefig(plt1, "spectrum_normalized_full.png")
+    println("Full normalized spectrum plot saved to: spectrum_normalized_full.png")
+
+    # Plot 2: Zoomed H-band region (13500-17500 Å) - continuum normalized
+    λ_min, λ_max = 13500.0, 17500.0
+    mask = (result.wavelengths .>= λ_min) .& (result.wavelengths .<= λ_max)
+
+    if sum(mask) > 0
+        plt2 = plot(result.wavelengths[mask], normalized[mask],
+                    xlabel="Wavelength (Å)",
+                    ylabel="Normalized Flux",
+                    title="H-band Detail ($λ_min-$λ_max Å): Teff=$Teff K, [Fe/H]=$Fe_H",
+                    label="Normalized Spectrum",
+                    linewidth=0.8,
+                    size=(1200, 600),
+                    margin=5Plots.mm)
+        hline!(plt2, [1.0], color=:black, linestyle=:dash,
+               label="Continuum", linewidth=1.5, alpha=0.5)
+        savefig(plt2, "spectrum_normalized_hband.png")
+        println("H-band zoom plot saved to: spectrum_normalized_hband.png")
+    else
+        println("Note: H-band range ($λ_min-$λ_max Å) not in wavelength coverage")
+    end
+
+    # Plot 3: Raw flux (for reference)
+    plt3 = plot(result.wavelengths, result.flux,
+                xlabel="Wavelength (Å)",
+                ylabel="Flux (erg/s/cm²/Å)",
+                title="Raw Flux: Teff=$Teff K, [Fe/H]=$Fe_H",
+                label="Spectrum",
+                linewidth=0.8,
+                size=(1200, 600),
+                margin=5Plots.mm)
+    plot!(plt3, result.wavelengths, result.continuum,
+          label="Continuum", linewidth=1.5, linestyle=:dash)
+    savefig(plt3, "spectrum_raw_flux.png")
+    println("Raw flux plot saved to: spectrum_raw_flux.png")
+
+catch e
     println("Note: Install Plots.jl to generate visualization (optional)")
+    println("Error: $e")
 end
 
 println("\n" * "="^70)

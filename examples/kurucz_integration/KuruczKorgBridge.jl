@@ -169,7 +169,7 @@ function get_kurucz_atmosphere(emulator, Teff::Real, logg::Real, Fe_H::Real, alp
 end
 
 """
-    calculate_heights(P, RHOX, logg)
+    calculate_heights(P, RHOX, tau, logg)
 
 Calculate geometric heights from pressure and column mass density.
 
@@ -179,12 +179,14 @@ Rearranging: dz = -dP / (g * ρ) = -dP / g * (dx/dρ)
 # Arguments
 - `P::Vector{Float64}`: Gas pressure (dyn/cm²)
 - `RHOX::Vector{Float64}`: Mass column density (g/cm²)
+- `tau::Vector{Float64}`: Optical depth at reference wavelength
 - `logg::Real`: Surface gravity (log10(cm/s²))
 
 # Returns
 - `z::Vector{Float64}`: Heights (cm), normalized so z=0 at τ_ross ≈ 1
 """
-function calculate_heights(P::Vector{Float64}, RHOX::Vector{Float64}, logg::Real)
+function calculate_heights(P::Vector{Float64}, RHOX::Vector{Float64},
+                          tau::Vector{Float64}, logg::Real)
     g = 10.0^logg  # cm/s²
     n = length(P)
     z = zeros(Float64, n)
@@ -207,9 +209,10 @@ function calculate_heights(P::Vector{Float64}, RHOX::Vector{Float64}, logg::Real
         end
     end
 
-    # Normalize so z=0 at optical depth ≈ 1 (approximate photosphere)
+    # Normalize so z=0 at optical depth = 1 (photosphere)
     # Find index closest to τ = 1
-    return z .- z[n÷2]  # Simple approximation
+    tau_1_idx = argmin(abs.(tau .- 1.0))
+    return z .- z[tau_1_idx]
 end
 
 """
@@ -253,7 +256,7 @@ function kurucz_to_korg(kurucz_atm::KuruczAtmosphere; reference_wavelength::Real
     Teff, logg, Fe_H, alpha_Fe = kurucz_atm.stellar_params
 
     # Calculate derived quantities
-    z = calculate_heights(kurucz_atm.P, kurucz_atm.RHOX, logg)
+    z = calculate_heights(kurucz_atm.P, kurucz_atm.RHOX, kurucz_atm.tau, logg)
     number_density = calculate_number_density(kurucz_atm.P, kurucz_atm.T)
 
     n_layers = length(kurucz_atm.tau)
